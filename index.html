@@ -143,6 +143,9 @@
       GRID_TIME_SLOTS.push(`${h}:${m}`);
     }
 
+    // 시간표 렌더링을 위한 12:00 ~ 22:00 배열 (주간 시간표용)
+    const TIMELINE_HOURS = Array.from({length: 11}, (_, i) => i + 12); 
+
     const WORKING_DAYS = [
       { label: '월', value: 1 }, { label: '화', value: 2 }, { label: '수', value: 3 },
       { label: '목', value: 4 }, { label: '금', value: 5 }, { label: '토', value: 6 }
@@ -243,25 +246,33 @@
               });
             }
           } else {
+            // 최초 접속 시에만 빈 데이터를 생성합니다.
             window.firebaseSetDoc(docRef, { events: [], rooms: INITIAL_ROOMS, spaceRooms: INITIAL_SPACE_ROOMS, users: [], instructors: [], categories: DEFAULT_INSTRUCTOR_CATEGORIES, notice: '' });
           }
         }, (error) => console.error(error));
         return () => unsubscribe();
       }, []);
 
+      // ❗[업데이트] 데이터 덮어쓰기 증발을 방지하는 안전한 클라우드 저장 함수
       const saveToCloud = async (newEvents, newRooms, newUsers, newNotice, newInstructors, newCategories, newSpaceRooms) => {
         if (!window.firebaseDb) return;
         try {
           const docRef = window.firebaseDoc(window.firebaseDb, "wm_calendar", "making_academy_data");
-          await window.firebaseSetDoc(docRef, { 
-            events: newEvents || events, 
-            rooms: newRooms || rooms,
-            users: newUsers || users,
-            instructors: newInstructors || instructors,
-            categories: newCategories || categories,
-            spaceRooms: newSpaceRooms || spaceRooms,
-            notice: newNotice !== undefined ? newNotice : notice
-          }, { merge: true });
+          const updateData = {};
+          
+          // 파라미터로 넘겨받은(null이 아닌) 데이터만 변경 항목으로 지정합니다.
+          if (newEvents !== null) updateData.events = newEvents;
+          if (newRooms !== null) updateData.rooms = newRooms;
+          if (newUsers !== null) updateData.users = newUsers;
+          if (newNotice !== null) updateData.notice = newNotice;
+          if (newInstructors !== null) updateData.instructors = newInstructors;
+          if (newCategories !== null) updateData.categories = newCategories;
+          if (newSpaceRooms !== null) updateData.spaceRooms = newSpaceRooms;
+
+          // 변경할 항목이 있을 때만 { merge: true } 로 일부분만 안전하게 덮어씁니다.
+          if (Object.keys(updateData).length > 0) {
+            await window.firebaseSetDoc(docRef, updateData, { merge: true });
+          }
         } catch (e) { showToast("⚠️ 서버 저장에 실패했습니다."); }
       };
 
@@ -620,70 +631,84 @@
                     </div>
                   )}
 
-                  <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden">
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 px-5 py-4 border-b border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center">
-                      <h2 className="font-bold text-emerald-800 dark:text-emerald-300">나의 주간 정규 수업</h2>
+                  {/* 주간 학교 시간표(Grid) 렌더링 방식 */}
+                  <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 px-5 py-4 border-b border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center shrink-0">
+                      <h2 className="font-bold text-emerald-800 dark:text-emerald-300">주간 정규 수업 시간표</h2>
                     </div>
-                    <div className="p-0">
-                      {events.filter(ev => {
-                          if (ev.type !== 'class') return false;
-                          if (isAdmin) return true;
-                          if (loggedInUser?.role === 'instructor') return ev.instructorId === loggedInUser.id;
-                          return ev.studentId === loggedInUser?.id;
-                        }).length === 0 ? (
-                        <div className="text-center py-12 text-neutral-400 text-sm">
-                          <div className="text-4xl mb-3 opacity-50">🗓️</div>
-                          배정된 정규 수업 일정이 없습니다.
-                        </div>
-                      ) : (
-                        <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                          {WORKING_DAYS.map(dayObj => {
-                            const dayClasses = events.filter(ev => ev.type === 'class' && ev.dayOfWeek === dayObj.value && (isAdmin || (loggedInUser?.role === 'instructor' ? ev.instructorId === loggedInUser.id : ev.studentId === loggedInUser?.id))).sort((a,b) => a.startTime.localeCompare(b.startTime));
-                            if(dayClasses.length === 0) return null;
-                            
-                            return (
-                              <div key={`day-${dayObj.value}`}>
-                                <div className="bg-neutral-50 dark:bg-neutral-850 px-4 py-2 border-b border-neutral-100 dark:border-neutral-800">
-                                  <span className="text-xs font-bold text-neutral-500">매주 {dayObj.label}요일</span>
-                                </div>
-                                {dayClasses.map(ev => {
-                                  const studentName = users.find(u => u.id === ev.studentId)?.name || '알 수 없음';
-                                  const instructorName = instructors.find(i => i.id === ev.instructorId)?.name || '미정';
-                                  const displayTitle = `${studentName} 학생 (${instructorName}T)`;
+                    
+                    <div className="overflow-x-auto hide-scrollbar">
+                      <div className="min-w-[600px] w-full p-4">
+                        <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-850 relative">
+                          
+                          {/* 헤더 (요일) */}
+                          <div className="grid grid-cols-[50px_repeat(6,1fr)] bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 z-10 relative">
+                            <div className="p-2 text-center text-[10px] font-bold text-neutral-400 border-r border-neutral-200 dark:border-neutral-700">시간</div>
+                            {WORKING_DAYS.map((day, idx) => (
+                              <div key={day.value} className={`p-2 text-center text-xs font-black border-r last:border-r-0 border-neutral-200 dark:border-neutral-700 ${idx === 5 ? 'text-blue-500' : 'text-neutral-700 dark:text-neutral-300'}`}>{day.label}</div>
+                            ))}
+                          </div>
 
-                                  return (
-                                    <li key={ev.id} className="p-5 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                                      <div className="shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm">
-                                        <span className="text-xs font-bold">매주</span>
-                                        <span className="text-xl font-black">{dayObj.label}</span>
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                          <span className="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">{ev.startTime} ~ {ev.endTime}</span>
-                                          {isAdmin ? (
-                                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300 px-1.5 py-0.5 rounded ml-2">
-                                              {instructorName}T / {studentName} 학생
-                                            </span>
-                                          ) : loggedInUser?.role === 'instructor' ? (
-                                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300 px-1.5 py-0.5 rounded ml-2">
-                                              담당 학생: {studentName} 학생
-                                            </span>
-                                          ) : (
-                                            <span className="text-[10px] font-bold text-purple-600 bg-purple-50 border border-purple-200 dark:bg-purple-900/30 dark:border-purple-800 dark:text-purple-300 px-1.5 py-0.5 rounded ml-2">
-                                              담당 강사: {instructorName}T
-                                            </span>
-                                          )}
-                                        </div>
-                                        <h4 className="text-base font-bold text-neutral-800 dark:text-white truncate">{displayTitle}</h4>
-                                      </div>
-                                    </li>
-                                  )
-                                })}
+                          {/* 타임라인 메인 (12시 ~ 22시) */}
+                          <div className="relative bg-white dark:bg-neutral-900" style={{ height: `${TIMELINE_HOURS.length * 60}px` }}>
+                            {/* 백그라운드 가로줄 & 시간 레이블 */}
+                            {TIMELINE_HOURS.map((hour, i) => (
+                              <div key={hour} className="absolute w-full flex border-b border-neutral-100 dark:border-neutral-800/50 box-border" style={{ top: `${i * 60}px`, height: '60px' }}>
+                                <div className="w-[50px] shrink-0 text-[10px] font-medium text-neutral-400 text-center border-r border-neutral-200 dark:border-neutral-700 -mt-2 bg-white dark:bg-neutral-900 z-10">{hour}:00</div>
+                                <div className="flex-1 grid grid-cols-6 divide-x divide-neutral-100 dark:divide-neutral-800/50">
+                                  <div/><div/><div/><div/><div/><div/>
+                                </div>
                               </div>
-                            )
-                          })}
-                        </ul>
-                      )}
+                            ))}
+                            
+                            {/* 수업 블록 렌더링 (그려지는 색종이 박스) */}
+                            {events.filter(ev => {
+                                if (ev.type !== 'class') return false;
+                                if (isAdmin) return true;
+                                if (loggedInUser?.role === 'instructor') return ev.instructorId === loggedInUser.id;
+                                return ev.studentId === loggedInUser?.id;
+                            }).map(ev => {
+                                const parseMins = (t) => {
+                                    if(!t) return 0;
+                                    const [h, m] = t.split(':').map(Number);
+                                    return h * 60 + m;
+                                };
+                                const startMins = parseMins(ev.startTime);
+                                const endMins = parseMins(ev.endTime);
+                                const baseMins = TIMELINE_HOURS[0] * 60; // 12:00
+                                
+                                // 화면 벗어나면 숨기기
+                                if (endMins <= baseMins || startMins >= (TIMELINE_HOURS[TIMELINE_HOURS.length-1] + 1) * 60) return null;
+                                
+                                const top = Math.max(0, startMins - baseMins);
+                                const height = endMins - startMins;
+                                const colIndex = ev.dayOfWeek - 1; // 월=1 -> 인덱스 0
+                                
+                                if (colIndex < 0 || colIndex > 5) return null;
+                                
+                                const studentName = users.find(u => u.id === ev.studentId)?.name || '알수없음';
+                                const instructorName = instructors.find(i => i.id === ev.instructorId)?.name || '미정';
+                                const displayTitle = isAdmin ? `${studentName} (${instructorName}T)` : loggedInUser?.role === 'instructor' ? `${studentName} 학생` : `${instructorName}T`;
+                                
+                                return (
+                                    <div key={ev.id} 
+                                         onClick={() => { setSelectedEvent(ev); setIsEventModalOpen(true); }}
+                                         className="absolute bg-emerald-100/90 dark:bg-emerald-900/80 border-l-4 border-emerald-500 rounded-r-lg p-1.5 overflow-hidden shadow-sm cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors z-20 flex flex-col justify-center"
+                                         style={{
+                                             top: `${top}px`,
+                                             height: `${height}px`,
+                                             left: `calc(50px + ${colIndex * (100/6)}%)`,
+                                             width: `calc(${100/6}% - 4px)`,
+                                             marginLeft: '2px'
+                                         }}>
+                                        <div className="text-[10px] md:text-[11px] font-black text-emerald-900 dark:text-emerald-100 truncate leading-tight">{displayTitle}</div>
+                                        <div className="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 mt-0.5">{ev.startTime}~{ev.endTime}</div>
+                                    </div>
+                                )
+                            })}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1083,8 +1108,8 @@
                 </div>
               </aside>
 
-              {/* 캘린더 메인 (모바일에서는 최소 높이 확보로 찌그러짐 방지, 데스크탑은 남은 영역 채움) */}
-              <div className="flex-1 flex flex-col min-w-0 min-h-[600px] md:min-h-0 md:h-full overflow-hidden transition-all duration-300 bg-white dark:bg-neutral-900 relative z-0 shrink-0">
+              {/* 달력 스크롤 문제 완벽 해결을 위한 구조 재편성 */}
+              <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 bg-white dark:bg-neutral-900 relative z-0 shrink-0">
                 <header className="flex-none z-20 flex items-center justify-between px-3 md:px-6 py-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 relative">
                   <div className="flex items-center gap-1 md:gap-2">
                     <h2 className="text-base md:text-lg font-black tracking-tight">{year}년 {month + 1}월</h2>
@@ -1100,8 +1125,8 @@
                   </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto bg-neutral-50/30 dark:bg-neutral-950 flex flex-col relative z-0">
-                  <div className="flex-1 flex flex-col select-none max-w-7xl mx-auto w-full p-2 md:p-6 pb-6 h-full relative z-0">
+                <div className="flex-1 overflow-y-auto bg-neutral-50/30 dark:bg-neutral-950 flex flex-col relative z-0 hide-scrollbar pb-32">
+                  <div className="flex-1 flex flex-col select-none max-w-7xl mx-auto w-full p-2 md:p-6 relative z-0">
                     <div className={`grid ${currentView === 'space_calendar' ? 'grid-cols-7' : 'grid-cols-6'} border-b border-neutral-200 dark:border-neutral-800 text-center pb-2 shrink-0`}>
                       {currentWorkingDays.map((day, idx) => {
                         let colorClass = 'text-neutral-400';
@@ -1117,8 +1142,7 @@
                       })}
                     </div>
 
-                    {/* 그리드 줄(Rows)이 화면에 맞춰 찌그러지지 않고 최소 75px을 보장하도록 설정 */}
-                    <div className={`grid ${currentView === 'space_calendar' ? 'grid-cols-7' : 'grid-cols-6'} flex-1 border-l border-b border-neutral-100 dark:border-neutral-850/60 mt-1 h-full relative z-0 isolate`} style={{ gridTemplateRows: `repeat(${calendarCells.length / (currentView === 'space_calendar' ? 7 : 6)}, minmax(75px, 1fr))` }}>
+                    <div className={`grid ${currentView === 'space_calendar' ? 'grid-cols-7' : 'grid-cols-6'} border-l border-b border-neutral-100 dark:border-neutral-850/60 mt-1 relative z-0 isolate`}>
                       {calendarCells.map((cell, idx) => {
                         const cellDateObj = new Date(cell.dateStr);
                         const cellDayOfWeek = cellDateObj.getDay(); 
@@ -1134,7 +1158,7 @@
                           <div
                             key={cell.dateStr}
                             onClick={() => { setSelectedDay(cell.dateStr); setIsDayListModalOpen(true); }}
-                            className={`border-r border-t border-neutral-200/80 dark:border-neutral-800/80 py-1 px-0 flex flex-col group transition-all relative cursor-pointer min-h-[75px] md:min-h-0 overflow-hidden ${
+                            className={`border-r border-t border-neutral-200/80 dark:border-neutral-800/80 py-1 px-0 flex flex-col group transition-all relative cursor-pointer min-h-[90px] md:min-h-[110px] overflow-hidden ${
                               cell.isCurrentMonth ? isWeekend ? 'bg-neutral-50/40 dark:bg-neutral-900/10' : 'bg-white dark:bg-neutral-900' : 'bg-neutral-100/40 dark:bg-neutral-950/20 text-neutral-300 dark:text-neutral-700'
                             } ${cell.isToday ? 'ring-1 ring-inset ring-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10' : ''} hover:bg-neutral-50 dark:hover:bg-neutral-850/50`}
                           >
@@ -1142,15 +1166,15 @@
                               <span className={`text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded-full ${cell.isToday ? 'bg-indigo-600 text-white shadow-sm' : cellDayOfWeek === 6 ? 'text-blue-500' : cellDayOfWeek === 0 ? 'text-red-500' : 'text-neutral-700 dark:text-neutral-300'}`}>
                                 {cell.day === 1 ? `${parseInt(cell.dateStr.split('-')[1], 10)}/${cell.day}` : cell.day}
                               </span>
-                              {dayEvents.length > 3 && (
+                              {dayEvents.length > 4 && (
                                 <span className="text-[8px] font-bold text-neutral-500 bg-neutral-200/60 dark:bg-neutral-800 px-1.5 py-[2px] rounded shadow-sm">
-                                  +{dayEvents.length - 3}
+                                  +{dayEvents.length - 4}
                                 </span>
                               )}
                             </div>
 
                             <div className="flex-1 flex flex-col gap-[2px] mt-1 w-full px-1 overflow-hidden z-10">
-                              {dayEvents.slice(0, 3).map((ev) => {
+                              {dayEvents.slice(0, 4).map((ev) => {
                                 const clr = getRoomColorInfo(ev.roomId, currentView === 'space_calendar');
                                 const isClass = ev.type === 'class';
                                 const targetRooms = currentView === 'space_calendar' ? spaceRooms : rooms;
@@ -1344,7 +1368,7 @@
             </div>
           )}
 
-          {/* 방 관리(추가/이름수정/ON-OFF) 팝업 */}
+          {/* 방 관리(ON/OFF) 팝업 */}
           {isRoomModalOpen && (
             <div className="fixed inset-0 bg-neutral-900/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
