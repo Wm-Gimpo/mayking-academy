@@ -137,8 +137,9 @@
       END_TIME_OPTIONS.push(`${h}:${m}`);
     }
     
+    // 타임라인을 위해 12:00 ~ 22:00 까지 생성
     const GRID_TIME_SLOTS = [];
-    for(let i = 20; i <= 41; i++) {
+    for(let i = 24; i <= 44; i++) {
       const h = String(Math.floor(i / 2)).padStart(2, '0');
       const m = i % 2 === 0 ? '00' : '30';
       GRID_TIME_SLOTS.push(`${h}:${m}`);
@@ -189,8 +190,8 @@
 
       const [assignInstId, setAssignInstId] = useState('');
       const [formDateStr, setFormDateStr] = useState('');
-      const [formStartTime, setFormStartTime] = useState('10:00');
-      const [formEndTime, setFormEndTime] = useState('11:00');
+      const [formStartTime, setFormStartTime] = useState('12:00');
+      const [formEndTime, setFormEndTime] = useState('13:00');
 
       useEffect(() => {
         if (!window.firebaseDb) return;
@@ -538,8 +539,9 @@
 
               <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center py-20 px-6 max-w-4xl mx-auto">
                 <div className="text-center mb-10 md:mb-14">
-                  <div className="mx-auto mb-8 p-4 bg-white rounded-[2rem] md:rounded-[3rem] inline-block shadow-sm md:shadow-md transform hover:scale-105 transition-transform duration-300">
-                    <img src="./logo.png" alt="메이킹학원 로고" className="h-32 md:h-56 w-auto object-contain" />
+                  {/* 메인 화면 로고: 네모 틀 100% 완전 삭제 및 이미지 대폭 확대 */}
+                  <div className="mx-auto mb-6 inline-block">
+                    <img src="./logo.png" alt="메이킹학원 로고" className="h-64 sm:h-80 md:h-[400px] w-auto object-contain transform hover:scale-105 transition-transform duration-300" />
                   </div>
                   
                   <h1 className="font-black text-4xl md:text-5xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 leading-tight mb-3">
@@ -599,8 +601,9 @@
             <div className="w-full h-full flex flex-col bg-neutral-50/50 dark:bg-neutral-950 overflow-y-auto">
               <header className="flex-none flex items-start justify-between px-4 py-3 md:py-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shadow-sm z-10">
                 <div className="flex items-start gap-2.5">
-                  <div className="shrink-0 p-1 bg-white rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-800 mt-1">
-                    <img src="./logo.png" alt="메이킹 로고" className="w-7 h-7 md:w-8 md:h-8 object-contain" />
+                  {/* 시간표 로고: 네모 틀 완전 삭제 및 크기 키움 */}
+                  <div className="shrink-0 mt-1 flex items-center justify-center">
+                    <img src="./logo.png" alt="메이킹 로고" className="h-10 w-auto md:h-12 object-contain" />
                   </div>
                   <div className="flex flex-col pt-1">
                     <h1 className="font-black text-[13px] md:text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 leading-tight">
@@ -714,8 +717,9 @@
               <aside className="w-full md:w-64 flex-shrink-0 bg-white dark:bg-neutral-900 border-b md:border-b-0 md:border-r border-neutral-200 dark:border-neutral-800 flex flex-col h-auto md:h-full z-20">
                 <div className="p-4 flex-none border-b border-neutral-100 dark:border-neutral-800 pb-4">
                   <div className="flex items-start gap-2.5">
-                    <div className="shrink-0 p-1 bg-white rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-800 mt-1">
-                      <img src="./logo.png" alt="메이킹 로고" className="w-7 h-7 md:w-8 md:h-8 object-contain" />
+                    {/* 데스크 로고: 네모 틀 완전 삭제 및 크기 키움 */}
+                    <div className="shrink-0 mt-1 flex items-center justify-center">
+                      <img src="./logo.png" alt="메이킹 로고" className="h-10 w-auto md:h-12 object-contain" />
                     </div>
                     <div className="flex flex-col pt-1">
                       <h1 className="font-black text-[13px] md:text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 leading-tight">
@@ -1019,8 +1023,9 @@
                     
                     <div className="flex items-start justify-between gap-2.5 pb-4 shrink-0 border-b border-neutral-100 dark:border-neutral-800">
                       <div className="flex items-start gap-2.5">
+                        {/* 예약 달력 로고: 네모 틀 완전 삭제 및 크기 키움 */}
                         <div className="shrink-0 mt-1 flex items-center justify-center">
-                          <img src="./logo.png" alt="메이킹 로고" className="w-9 h-9 md:w-10 md:h-10 object-contain" />
+                          <img src="./logo.png" alt="메이킹 로고" className="h-12 w-auto md:h-14 object-contain" />
                         </div>
                         <div className="flex flex-col pt-1">
                           <h1 className="font-black text-[13px] md:text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 leading-tight">
@@ -1106,7 +1111,7 @@
                 </div>
               </aside>
 
-              <div className="flex-1 flex flex-col min-w-0 min-h-[600px] md:min-h-0 md:h-full overflow-hidden transition-all duration-300 bg-white dark:bg-neutral-900 relative z-0 shrink-0">
+              <div className="flex-1 flex flex-col min-w-0 h-auto md:h-full overflow-visible transition-all duration-300 bg-white dark:bg-neutral-900 relative z-0 shrink-0">
                 <header className="flex-none z-20 flex items-center justify-between px-3 md:px-6 py-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 relative">
                   <div className="flex items-center gap-1 md:gap-2">
                     <h2 className="text-base md:text-lg font-black tracking-tight">{year}년 {month + 1}월</h2>
@@ -1122,8 +1127,8 @@
                   </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto bg-neutral-50/30 dark:bg-neutral-950 flex flex-col relative z-0">
-                  <div className="flex-1 flex flex-col select-none max-w-7xl mx-auto w-full p-2 md:p-6 pb-32 md:pb-6 h-full relative z-0">
+                <div className="flex-1 overflow-visible md:overflow-y-auto bg-neutral-50/30 dark:bg-neutral-950 flex flex-col relative z-0 pb-40">
+                  <div className="flex-1 flex flex-col select-none max-w-7xl mx-auto w-full p-2 md:p-6 h-full relative z-0">
                     <div className={`grid ${currentView === 'space_calendar' ? 'grid-cols-7' : 'grid-cols-6'} border-b border-neutral-200 dark:border-neutral-800 text-center pb-2 shrink-0`}>
                       {currentView === 'space_calendar' ? (
                         <React.Fragment>
@@ -1141,7 +1146,8 @@
 
                     <div className={`grid ${currentView === 'space_calendar' ? 'grid-cols-7' : 'grid-cols-6'} flex-1 border-l border-b border-neutral-100 dark:border-neutral-850/60 mt-1 h-full relative z-0 isolate`} style={{ gridTemplateRows: `repeat(${calendarCells.length / (currentView === 'space_calendar' ? 7 : 6)}, minmax(75px, 1fr))` }}>
                       {calendarCells.map((cell, idx) => {
-                        const cellDayOfWeek = cell.dayOfWeek; 
+                        const cellDateObj = new Date(cell.dateStr);
+                        const cellDayOfWeek = cellDateObj.getDay(); 
                         
                         const dayEvents = sortedEventsForCalendar.filter(ev => {
                           if (ev.type === 'class') return ev.dayOfWeek === cellDayOfWeek;
@@ -1208,7 +1214,7 @@
             </div>
           )}
 
-          {}
+          {/* 일간 상세 목록 팝업 */}
           {isDayListModalOpen && (
             <div className="fixed inset-0 bg-neutral-900/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 w-full max-w-md shadow-2xl flex flex-col max-h-[85vh]">
@@ -1272,6 +1278,7 @@
             </div>
           )}
 
+          {/* 예약 등록/수정 팝업 */}
           {isEventModalOpen && (
             <div className="fixed inset-0 bg-neutral-900/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 w-full max-w-md shadow-2xl max-h-[95vh] flex flex-col">
@@ -1363,56 +1370,26 @@
             </div>
           )}
 
+          {/* 방 관리(ON/OFF) 팝업 */}
           {isRoomModalOpen && (
             <div className="fixed inset-0 bg-neutral-900/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
                 <div className="flex flex-col h-full overflow-hidden">
                   <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3 mb-4 shrink-0">
                     <h3 className="font-bold text-sm">{currentView === 'space_calendar' ? '공간/합주실 상태 관리' : '연습실 상태 관리 (ON/OFF)'}</h3>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => {
-                        const targetRooms = currentView === 'space_calendar' ? spaceRooms : rooms;
-                        const newId = `${currentView === 'space_calendar' ? 'space' : 'room'}-${Date.now()}`;
-                        const newRoom = { id: newId, name: `새 공간`, color: 'slate', isActive: true };
-                        if (currentView === 'space_calendar') {
-                          const next = [...spaceRooms, newRoom];
-                          setSpaceRooms(next); saveToCloud(null, null, null, null, null, null, next);
-                        } else {
-                          const next = [...rooms, newRoom];
-                          setRooms(next); saveToCloud(null, next, null, null, null, null, null);
-                        }
-                      }} className="px-3 py-1 bg-indigo-600 text-white rounded text-xs font-bold flex items-center gap-1 hover:bg-indigo-700">
-                        <SvgIcon name="plus" className="w-3 h-3" /> 방 추가
-                      </button>
-                      <button onClick={() => setIsRoomModalOpen(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md text-neutral-400">
-                        <SvgIcon name="close" className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <button onClick={() => setIsRoomModalOpen(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md text-neutral-400">
+                      <SvgIcon name="close" className="w-4 h-4" />
+                    </button>
                   </div>
                   
                   <div className="overflow-y-auto space-y-2 pr-1 hide-scrollbar">
                     {(currentView === 'space_calendar' ? spaceRooms : rooms).map(r => (
                       <div key={r.id} className="flex justify-between items-center p-3 border border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-850/50">
-                        <div className="flex items-center gap-2 flex-1 mr-3">
-                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLOR_PALETTES.find(p=>p.id===r.color)?.hex || '#ccc'}}></span>
-                          <input 
-                            type="text" 
-                            defaultValue={r.name}
-                            onBlur={(e) => {
-                              const newName = e.target.value.trim();
-                              if (!newName) return;
-                              if (currentView === 'space_calendar') {
-                                const next = spaceRooms.map(sr => sr.id === r.id ? {...sr, name: newName} : sr);
-                                setSpaceRooms(next); saveToCloud(null, null, null, null, null, null, next);
-                              } else {
-                                const next = rooms.map(rr => rr.id === r.id ? {...rr, name: newName} : rr);
-                                setRooms(next); saveToCloud(null, next, null, null, null, null, null);
-                              }
-                            }}
-                            className={`w-full bg-transparent text-xs font-bold outline-none border-b border-transparent focus:border-indigo-500 py-0.5 ${r.isActive === false ? 'text-neutral-400 line-through' : 'text-neutral-800 dark:text-white'}`}
-                          />
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLOR_PALETTES.find(p=>p.id===r.color)?.hex || '#ccc'}}></span>
+                          <span className={`text-xs font-bold ${r.isActive === false ? 'text-neutral-400 line-through' : 'text-neutral-800 dark:text-white'}`}>{r.name}</span>
                         </div>
-                        <button onClick={() => toggleRoomActive(r.id, currentView === 'space_calendar')} className={`shrink-0 relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${r.isActive !== false ? 'bg-indigo-500' : 'bg-neutral-300 dark:bg-neutral-700'}`}>
+                        <button onClick={() => toggleRoomActive(r.id, currentView === 'space_calendar')} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${r.isActive !== false ? 'bg-indigo-500' : 'bg-neutral-300 dark:bg-neutral-700'}`}>
                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform`} style={{ transform: r.isActive !== false ? 'translateX(18px)' : 'translateX(4px)' }}/>
                         </button>
                       </div>
@@ -1423,6 +1400,7 @@
             </div>
           )}
 
+          {/* 계정 상세 수정 팝업 */}
           {selectedAccountForEdit && (
             <div className="fixed inset-0 bg-neutral-900/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 w-full max-w-md shadow-2xl max-h-[95vh] flex flex-col">
@@ -1502,6 +1480,7 @@
             </div>
           )}
 
+          {/* 강사 과목 추가 팝업 */}
           {isCategoryModalOpen && (
             <div className="fixed inset-0 bg-neutral-900/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 w-full max-w-sm shadow-2xl">
@@ -1526,6 +1505,7 @@
             </div>
           )}
 
+          {/* 시스템 로그인 모달 */}
           {isLoginModalOpen && (
             <div className="fixed inset-0 bg-neutral-900/70 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
               <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 p-6 md:p-8 w-full max-w-sm shadow-2xl relative overflow-hidden">
