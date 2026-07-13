@@ -760,6 +760,7 @@
                               </div>
                               {WORKING_DAYS.map(day => {
                                 const classesAtTime = events.filter(ev => ev.type === 'class' && ev.dayOfWeek === day.value && ev.startTime === time && (isAdmin || (loggedInUser?.role === 'instructor' ? ev.instructorId === loggedInUser.id : (ev.studentIds ? ev.studentIds.includes(loggedInUser?.id) : ev.studentId === loggedInUser?.id))));
+                                
                                 return (
                                   <div key={day.value} className="border-r last:border-r-0 border-neutral-100 dark:border-neutral-800/50 p-1 flex flex-col gap-1 relative">
                                     {classesAtTime.map(cls => {
@@ -1097,7 +1098,7 @@
                                   <h3 className="font-black text-rose-600 dark:text-rose-400 mb-3 border-b border-neutral-100 dark:border-neutral-800 pb-2">{day.label}요일</h3>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {dayClasses.map(cls => {
-                                      const studentName = users.find(u => u.id === cls.studentId)?.name || '알수없음';
+                                      const studentName = cls.studentIds ? cls.studentIds.map(id => users.find(u => u.id === id)?.name).join(', ') : (users.find(u => u.id === cls.studentId)?.name || '알수없음');
                                       const instructorName = instructors.find(i => i.id === cls.instructorId)?.name || '미정';
                                       return (
                                         <div key={cls.id} className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl flex justify-between items-center bg-neutral-50 dark:bg-neutral-850 hover:border-rose-300 dark:hover:border-rose-800/60 transition-colors">
@@ -1825,10 +1826,10 @@
                     <h4 className="text-xs font-bold text-neutral-800 dark:text-neutral-200 mb-3 flex items-center gap-1.5"><SvgIcon name="calendar" className="w-4 h-4 text-emerald-500" /> 배정된 정규 수업</h4>
                     <div className="space-y-2">
                       {(() => {
-                        const assignedClasses = events.filter(ev => ev.type === 'class' && (selectedAccountForEdit.role === 'student' ? ev.studentId === selectedAccountForEdit.id : ev.instructorId === selectedAccountForEdit.id));
+                        const assignedClasses = events.filter(ev => ev.type === 'class' && (selectedAccountForEdit.role === 'student' ? (ev.studentIds ? ev.studentIds.includes(selectedAccountForEdit.id) : ev.studentId === selectedAccountForEdit.id) : ev.instructorId === selectedAccountForEdit.id));
                         if(assignedClasses.length === 0) return <div className="text-center text-[11px] text-neutral-400 py-4 bg-neutral-50 dark:bg-neutral-800/30 rounded-lg">배정된 수업이 없습니다.</div>;
                         return assignedClasses.map(ev => {
-                          const oppName = selectedAccountForEdit.role === 'student' ? (instructors.find(i=>i.id===ev.instructorId)?.name + 'T') : (users.find(u=>u.id===ev.studentId)?.name + ' 학생');
+                          const oppName = selectedAccountForEdit.role === 'student' ? (instructors.find(i=>i.id===ev.instructorId)?.name + 'T') : (ev.studentIds ? ev.studentIds.map(id => users.find(u=>u.id===id)?.name).join(', ') + ' 학생' : (users.find(u=>u.id===ev.studentId)?.name + ' 학생'));
                           return (
                             <div key={ev.id} className="p-3 bg-neutral-50 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-700 rounded-xl flex items-center justify-between">
                               <div>
