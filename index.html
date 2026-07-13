@@ -209,6 +209,7 @@
       const [accountDeleteConfirm, setAccountDeleteConfirm] = useState(false);
 
       const [assignInstId, setAssignInstId] = useState('');
+      const [assignDay, setAssignDay] = useState(''); // 원장님이 선택한 요일을 기억하는 장치
       const [formDateStr, setFormDateStr] = useState('');
       const [formStartTime, setFormStartTime] = useState('10:00');
       const [formEndTime, setFormEndTime] = useState('11:00');
@@ -951,9 +952,9 @@
                   </div>
                 )}
 
-                {/* 탭: 수업 배정 */}
+                  {/* 탭: 수업 배정 */}
                 {adminTab === 'class_assign' && (
-                  <div className="p-6 md:p-10 flex-1 h-auto md:overflow-y-auto relative">
+                  <div className="p-6 md:p-10 flex-1 overflow-y-auto">
                     <div className="max-w-3xl mx-auto">
                       <div className="mb-6">
                         <h2 className="text-xl md:text-2xl font-black text-neutral-900 dark:text-white flex items-center gap-2">
@@ -966,22 +967,20 @@
                         e.preventDefault();
                         const formData = new FormData(e.target);
                         const stId = formData.get('studentId');
-                        const dayTimeVal = formData.get('dayTime');
-                        
-                        if(!dayTimeVal) return showToast("⚠️ 가능한 요일 및 시간을 선택해주세요.");
-                        
-                        const [dayValStr, timeVal] = dayTimeVal.split('-');
-                        const assignDayNum = Number(dayValStr);
+                        const assignDayNum = Number(formData.get('dayOfWeek'));
+                        const timeVal = formData.get('startTime');
+
+                        if(!assignDayNum || !timeVal) return showToast("⚠️ 요일 및 시작 시간을 모두 선택해주세요.");
 
                         const stName = users.find(u => u.id === stId)?.name || '학생';
                         const instName = instructors.find(i => i.id === assignInstId)?.name || '강사';
-                        
+
                         const sIdx = GRID_TIME_SLOTS.indexOf(timeVal);
                         const endTime = sIdx + 2 < GRID_TIME_SLOTS.length ? GRID_TIME_SLOTS[sIdx+2] : GRID_TIME_SLOTS[GRID_TIME_SLOTS.length-1];
 
                         handleSaveEvent({
                           type: 'class',
-                          roomId: 'unassigned', 
+                          roomId: 'unassigned',
                           dayOfWeek: assignDayNum,
                           startTime: timeVal,
                           endTime: endTime,
@@ -990,38 +989,55 @@
                           title: `${stName} 학생 (${instName}T)`,
                           desc: ''
                         });
-                        e.target.reset(); setAssignInstId('');
+                        e.target.reset(); setAssignInstId(''); setAssignDay('');
                       }} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6 md:p-8 space-y-6">
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-xs font-bold text-neutral-500 mb-2">담당 강사 우선 선택</label>
-                            <select name="instructorId" value={assignInstId} onChange={e=>setAssignInstId(e.target.value)} required className="w-full px-4 py-3 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/50 rounded-xl text-sm font-bold text-purple-900 dark:text-purple-300 outline-none focus:border-purple-500 transition-colors">
+                            {/* 강사를 바꾸면 선택했던 요일도 초기화되도록 설정 */}
+                            <select name="instructorId" value={assignInstId} onChange={e=>{setAssignInstId(e.target.value); setAssignDay('');}} required className="w-full px-4 py-3 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/50 rounded-xl text-sm font-bold text-purple-900 dark:text-purple-300 outline-none focus:border-purple-500 transition-colors">
                               <option value="" disabled>강사를 선택하세요</option>
                               {instructors.map(i => <option key={i.id} value={i.id}>{i.name}T ({i.category})</option>)}
                             </select>
                           </div>
-                          <div>
-                            <label className="block text-xs font-bold text-neutral-500 mb-2">수업 요일 및 시작 시간</label>
-                            <select name="dayTime" required className="w-full px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl text-sm font-bold text-emerald-900 dark:text-emerald-300 outline-none focus:border-emerald-500 transition-colors">
-                              {!assignInstId ? (
-                                <option value="" disabled selected>강사를 먼저 선택하세요</option>
-                              ) : availableTimesForAssign.length === 0 ? (
-                                <option value="" disabled selected>오픈된 스케줄이 없습니다.</option>
-                              ) : (
-                                <React.Fragment>
-                                  <option value="" disabled selected>선택 (기본 1시간 배정)</option>
-                                  {availableTimesForAssign.map(t => <option key={t.val} value={t.val}>{t.label}</option>)}
-                                </React.Fragment>
-                              )}
-                            </select>
+
+                          {/* 💡 50:50으로 나눈 요일/시간 선택 영역 */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-bold text-neutral-500 mb-2">수업 요일 선택</label>
+                              <select name="dayOfWeek" value={assignDay} onChange={e=>setAssignDay(e.target.value)} required className="w-full px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl text-sm font-bold text-emerald-900 dark:text-emerald-300 outline-none focus:border-emerald-500 transition-colors">
+                                <option value="" disabled>선택</option>
+                                {!assignInstId ? null : WORKING_DAYS.map(d => (
+                                  <option key={d.value} value={d.value}>{d.label}요일</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-neutral-500 mb-2">시작 시간</label>
+                              <select name="startTime" defaultValue="" required className="w-full px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 rounded-xl text-sm font-bold text-emerald-900 dark:text-emerald-300 outline-none focus:border-emerald-500 transition-colors">
+                                {!assignInstId || !assignDay ? (
+                                  <option value="" disabled>요일 먼저 선택</option>
+                                ) : (() => {
+                                  // 선택한 요일에 강사가 오픈한 시간만 걸러서 보여주는 로직
+                                  const availableTimes = GRID_TIME_SLOTS.filter(t => instructors.find(i=>i.id===assignInstId)?.availability?.[`${assignDay}-${t}`]);
+                                  if (availableTimes.length === 0) return <option value="" disabled>오픈된 시간 없음</option>;
+                                  return (
+                                    <React.Fragment>
+                                      <option value="" disabled>시간 선택</option>
+                                      {availableTimes.map(t => <option key={t} value={t}>{t} 시작</option>)}
+                                    </React.Fragment>
+                                  );
+                                })()}
+                              </select>
+                            </div>
                           </div>
                         </div>
 
                         <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800">
                           <label className="block text-xs font-bold text-neutral-500 mb-2">수강 학생 매칭</label>
-                          <select name="studentId" required className="w-full px-4 py-3 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800/50 rounded-xl text-sm font-bold text-indigo-900 dark:text-indigo-300 outline-none focus:border-indigo-500 transition-colors">
-                            <option value="" disabled selected>학생을 선택하세요</option>
+                          <select name="studentId" defaultValue="" required className="w-full px-4 py-3 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800/50 rounded-xl text-sm font-bold text-indigo-900 dark:text-indigo-300 outline-none focus:border-indigo-500 transition-colors">
+                            <option value="" disabled>학생을 선택하세요</option>
                             {users.map(u => <option key={u.id} value={u.id}>{u.name} 학생</option>)}
                           </select>
                         </div>
